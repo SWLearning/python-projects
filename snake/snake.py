@@ -11,17 +11,38 @@ screen = pygame.display.set_mode((tile*plane[0], tile*plane[1]))
 
 running = True
 
-snake = [(0,0), (0,1), (0,2)]
+walls = []
+snake = [(2,2), (2,3), (2,4)]
 food = None
+
+def build_walls():
+    global walls
+
+    for x in range(plane[0]):
+        for y in range(plane[1]):
+            if x == 0 or x == plane[0] - 1:
+                walls.append((x,y))
+                continue
+            
+            if y == 0 or y == plane[1] - 1:
+                walls.append((x,y))
+                continue
+
+
 
 def place_food():
     global food
 
     while True:
-        food = (random.randint(0, plane[0]), random.randint(0, plane[1]))
+        food = (random.randint(0, plane[0]-1), random.randint(0, plane[1]-1))
 
-        if food not in snake:
-            break
+        if food in snake:
+            continue
+
+        if food in walls:
+            continue
+
+        break
 
 class Direction(Enum):
     UP = 1
@@ -49,6 +70,11 @@ def update_snake():
 
     if head in snake:
         running = False
+        return
+    
+    if head in walls:
+        running = False
+        return
 
     if food == head:
         place_food()
@@ -79,7 +105,8 @@ def handle_inputs():
 
                 case pygame.K_RIGHT:
                     direction = Direction.RIGHT
-            
+
+build_walls()
 place_food()
 
 while running:
@@ -97,6 +124,16 @@ while running:
             (0,255,0),
             (x, y, tile, tile),
         )
+    
+        for part in walls:
+            x = tile * part[0]
+            y = tile * part[1]
+
+            pygame.draw.rect(
+                screen,
+                (0,255,0),
+                (x, y, tile, tile),
+            )
 
     
     pygame.draw.rect(
@@ -106,7 +143,7 @@ while running:
     )
 
     pygame.display.update()
-    time.sleep(0.2)
+    time.sleep(0.05)
 
 # TODO
 #  - Remove time.sleep in favour of more responsive approach
