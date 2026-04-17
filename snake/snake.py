@@ -11,37 +11,44 @@ screen = pygame.display.set_mode((tile*plane[0], tile*plane[1]))
 
 running = True
 
-walls = []
+class Tile(Enum):
+    WALL = 1
+    FOOD = 2
+
+world = []
+
 snake = [(2,2), (2,3), (2,4)]
 food = None
 
-def build_walls():
-    global walls
-
+def build_world():
     for x in range(plane[0]):
+        world.append([])
+
         for y in range(plane[1]):
             if x == 0 or x == plane[0] - 1:
-                walls.append((x,y))
+                world[x].append(Tile.WALL)
                 continue
             
             if y == 0 or y == plane[1] - 1:
-                walls.append((x,y))
+                world[x].append(Tile.WALL)
                 continue
 
+            world[x].append(None)
 
 
 def place_food():
-    global food
+    global world
 
     while True:
-        food = (random.randint(0, plane[0]-1), random.randint(0, plane[1]-1))
+        x, y = random.randint(0, plane[0]-1), random.randint(0, plane[1]-1)
 
-        if food in snake:
+        if world[x][y] == Tile.WALL:
             continue
 
-        if food in walls:
+        if (x,y) in snake:
             continue
 
+        world[x][y] = Tile.FOOD
         break
 
 class Direction(Enum):
@@ -72,11 +79,12 @@ def update_snake():
         running = False
         return
     
-    if head in walls:
+    if world[head[0]][head[1]] == Tile.WALL:
         running = False
         return
-
-    if food == head:
+    
+    if world[head[0]][head[1]] == Tile.FOOD:
+        world[head[0]][head[1]] = None
         place_food()
     else:
         snake = snake[1:]
@@ -106,7 +114,7 @@ def handle_inputs():
                 case pygame.K_RIGHT:
                     direction = Direction.RIGHT
 
-build_walls()
+build_world()
 place_food()
 
 while running:
@@ -125,28 +133,26 @@ while running:
             (x, y, tile, tile),
         )
     
-        for part in walls:
-            x = tile * part[0]
-            y = tile * part[1]
+        for x in range(plane[0]):
+            for y in range(plane[1]):
+                if world[x][y] is None:
+                    continue
 
-            pygame.draw.rect(
-                screen,
-                (0,255,0),
-                (x, y, tile, tile),
-            )
+                sx = tile * x
+                sy = tile * y
 
-    
-    pygame.draw.rect(
-        screen,
-        (0,255,0),
-        (food[0]*tile, food[1]*tile, tile, tile),
-    )
+                pygame.draw.rect(
+                    screen,
+                    (0,255,0),
+                    (sx, sy, tile, tile),
+                )
 
     pygame.display.update()
     time.sleep(0.05)
 
 # TODO
-#  - Remove time.sleep in favour of more responsive approach
 #  - Generally improve code/refactor
+#  - Remove time.sleep in favour of more responsive approach
 #  - Add walls and/or teleporting
 #  - Add scoring
+#  - Do diff-based rendering (only render updated squares rather than all)
